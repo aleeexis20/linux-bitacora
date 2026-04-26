@@ -25,15 +25,196 @@ function getCeldas(rangoZeldas){
  */
 
 function ls(arg) {
-  // Obtenemos todos los datos (Ajusta "A2:G50" al rango real de tu tabla)
-  const datos = getCeldas("A2:G50"); 
-  
-  // Índices de columnas (A=0, B=1, etc.) - Ajusta según tu hoja
-  const COL_TEL = 3; 
-  const COL_WEB = 4;
-  const COL_CORREO = 5;
+  const datos = getCeldas("A2:AZ100"); 
+  const COL_ID = 0;      // Columna A
+  const COL_NOMBRE = 1;  // Columna B
+  const COL_TEL = 27;    // Columna AB
+  const COL_CORREO = 28; // Columna AC
+  const COL_WEB = 29;    // Columna AD
 
   let filtrados = datos.filter(fila => {
+    let tieneT = fila[COL_TEL] !== "";
+    let tieneW = fila[COL_WEB] !== "";
+    let tieneC = fila[COL_CORREO] !== "";
+
+    if (arg === 't') return tieneT;
+    if (arg === 'w') return tieneW;
+    if (arg === 'c') return tieneC;
+    if (arg === 'a') return (tieneT && tieneW && tieneC);
+    return false;
+  });
+
+  // --- Impresión limpia en consola ---
+  if (filtrados.length === 0) {
+    console.log(`Resultados ls(${arg}): No se encontraron negocios con ese criterio.`);
+  } else {
+    filtrados.forEach(negocio => {
+      // Validamos si el dato existe para imprimirlo, si no, ponemos "N/A"
+      let tel = negocio[COL_TEL] ? negocio[COL_TEL] : "N/A";
+      let correo = negocio[COL_CORREO] ? negocio[COL_CORREO] : "N/A";
+      let web = negocio[COL_WEB] ? negocio[COL_WEB] : "N/A";
+
+      console.log(`📞 [${negocio[COL_ID]}] ${negocio[COL_NOMBRE]} | Tel: ${tel} | Correo: ${correo} | Web: ${web}`);
+    });
+  }
+
+  return filtrados;
+}
+
+/**
+ * 2. Función lsV - Filtro por vialidad (Mejorada contra espacios fantasma)
+ */
+function lsV(tipoVialidad, nombreVialidad) {
+  const datos = getCeldas("A2:AZ100");
+  const COL_ID = 0;       // Columna A
+  const COL_NOMBRE = 1;   // Columna B
+  const COL_TIPO = 5;     // Columna F
+  const COL_NOMBRE_V = 6; // Columna G
+
+  // Limpiamos los parámetros de búsqueda por si tú les pusiste espacio sin querer
+  let tipoBusqueda = tipoVialidad.toString().trim().toLowerCase();
+  let nombreBusqueda = nombreVialidad.toString().trim().toLowerCase();
+
+  let filtrados = datos.filter(fila => 
+    fila[COL_TIPO] !== "" && fila[COL_NOMBRE_V] !== "" &&
+    // El .trim() limpia los espacios extra del Excel antes de comparar
+    fila[COL_TIPO].toString().trim().toLowerCase() === tipoBusqueda &&
+    fila[COL_NOMBRE_V].toString().trim().toLowerCase() === nombreBusqueda
+  );
+
+  // Impresión bonita en consola
+  if (filtrados.length === 0) {
+    console.log("Resultados lsV: No se encontraron negocios en esa vialidad.");
+  } else {
+    filtrados.forEach(negocio => {
+      console.log(`🛣️ [${negocio[COL_ID]}] ${negocio[COL_NOMBRE]} | Ubicación: ${negocio[COL_TIPO]} ${negocio[COL_NOMBRE_V]}`);
+    });
+  }
+
+  return filtrados;
+}
+
+/**
+ * 3. Función lsGPS(latitud, longitud)
+ * Encuentra los 5 más cercanos en un radio de 3km.
+ */
+
+function lsGPS(latitud, longitud) {
+  const datos = getCeldas("A2:AZ100"); 
+  
+  const COL_ID = 0;     // Columna A (CLEE / ID)
+  const COL_NOMBRE = 1; // Columna B (nom_estab)
+  const COL_GPS = 30;   // Columna AE (Coordenadas conjuntas)
+  const RADIO_MAX = 3;  // km
+
+  // --- Limpieza de parámetros de entrada (Por si no tienen puntos) ---
+  let latIn = latitud.toString().trim();
+  let lonIn = longitud.toString().trim();
+
+  // Inyectar el punto decimal si no lo trae
+  if (!latIn.includes('.')) latIn = latIn.slice(0, 2) + "." + latIn.slice(2);
+  if (!lonIn.includes('.')) lonIn = lonIn.slice(0, 4) + "." + lonIn.slice(4);
+
+  let lat1 = parseFloat(latIn);
+  let lon1 = parseFloat(lonIn);
+
+  // --- Procesamiento de la base de datos ---
+  let cercanos = datos
+  .filter(fila => fila[COL_GPS] && fila[COL_GPS].toString().includes(',')) 
+  .map(fila => {
+    let partesGps = fila[COL_GPS].toString().split(',');
+    let latString = partesGps[0].trim();
+    let lonString = partesGps[1].trim();
+    
+    // Inyección de punto decimal a los datos crudos del Excel
+    let lat2 = parseFloat(latString.slice(0, 2) + "." + latString.slice(2));
+    let lon2 = parseFloat(lonString.slice(0, 4) + "." + lonString.slice(4));
+
+    let d = calcularDistancia(lat1, lon1, lat2, lon2);
+    
+    return { id: fila[COL_ID], nombre: fila[COL_NOMBRE], distancia: d };
+  })
+  .filter(item => item.distancia <= RADIO_MAX)
+  .sort((a, b) => a.distancia - b.distancia)
+  .slice(0, 5);
+
+  // --- Impresión de resultados ---
+  if (cercanos.length === 0) {
+    console.log("No se encontraron negocios a menos de 3 km.");
+  } else {
+    cercanos.forEach(negocio => {
+      console.log(`📌 [${negocio.id}] ${negocio.nombre} | Distancia: ${negocio.distancia.toFixed(2)} km`);
+    });
+  }
+
+  return cercanos;
+}
+
+/**
+ * Función auxiliar para cálculo de distancia 
+ */
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radio Tierra en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+/**
+ * Crea un menú personalizado al abrir el archivo.
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("🛠️ Herramientas BI")
+    .addItem("Buscar por Contacto", "ejecutarLS") // Necesitarías una función que pida el dato
+    .addToUi();
+}
+
+/**
+ * ==========================================
+ * ENTORNO DE PRUEBAS 
+ * Seleccione "hacerPruebas" en el menú superior y presione Ejecutar.
+ * ==========================================
+ */
+
+function hacerPruebas() {
+  console.log("🚀 === INICIANDO FUNCIÓN DE PRUEBAS === 🚀");
+
+  // ---------------------------------------------------------
+  console.log("--- 1. Probando Filtro por Contacto (ls) ---");
+  // 'a' busca los que tienen todos los datos (tel, web y correo). 
+  // Puedes cambiarlo por 'a','t', 'w' o 'c'
+  //'t' muestra los que tiene telefono
+  //'w' muestra los que tiene pagina web
+  //'c' muestra los que tiene correo electronico
+  //'a' muestra solo los que tiene los tres componentes telefono, web y correo electronico
+  ls('a'); 
+
+  // ---------------------------------------------------------
+  console.log("--- 2. Probando Filtro por Vialidad (lsV) ---");
+  // Busca negocios en "CALLE" con nombre "JUÁREZ" 
+  lsV('CALLE', 'JUÁREZ'); 
+
+  // ---------------------------------------------------------
+  console.log("--- 3. Probando Búsqueda GPS (lsGPS) ---");
+  // Búsqueda con coordenadas
+  lsGPS('2198795500', '-10229574701'); 
+
+  console.log("✅ === PRUEBAS FINALIZADAS === ✅");
+}
+
+
+
+
+
+
+
+
+
     let tieneT = fila[COL_TEL] !== "";
     let tieneW = fila[COL_WEB] !== "";
     let tieneC = fila[COL_CORREO] !== "";
