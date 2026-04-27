@@ -37,26 +37,29 @@ function ls(arg) {
     let tieneW = fila[COL_WEB] !== "";
     let tieneC = fila[COL_CORREO] !== "";
 
-    if (arg === 't') return tieneT;
-    if (arg === 'w') return tieneW;
-    if (arg === 'c') return tieneC;
-    if (arg === 'a') return (tieneT && tieneW && tieneC);
-    return false;
+    // Filtro
+    if (arg === 't') {
+      return tieneT;
+    } else if (arg === 'w') {
+      return tieneW;
+    } else if (arg === 'c') {
+      return tieneC;
+    } else if (arg === 'a') {
+      return (tieneT && tieneW && tieneC);
+    } else {
+      // Error por opción invalida
+      throw new Error(`ls: argumento inválido '${arg}'. Opciones válidas: 't', 'w', 'c', 'a'.`);
+    }
   });
 
   // --- Impresión en consola ---
-  if (filtrados.length === 0) {
-    console.log(`Resultados ls(${arg}): No se encontraron negocios con ese criterio.`);
-  } else {
-    filtrados.forEach(negocio => {
-      // Validamos si el dato existe para imprimirlo, si no, ponemos "N/A"
-      let tel = negocio[COL_TEL] ? negocio[COL_TEL] : "N/A";
-      let correo = negocio[COL_CORREO] ? negocio[COL_CORREO] : "N/A";
-      let web = negocio[COL_WEB] ? negocio[COL_WEB] : "N/A";
+  filtrados.forEach(negocio => {
+    let tel = negocio[COL_TEL] ? negocio[COL_TEL] : "N/A";
+    let correo = negocio[COL_CORREO] ? negocio[COL_CORREO] : "N/A";
+    let web = negocio[COL_WEB] ? negocio[COL_WEB] : "N/A";
 
-      console.log(`📞 [${negocio[COL_ID]}] ${negocio[COL_NOMBRE]} | Tel: ${tel} | Correo: ${correo} | Web: ${web}`);
-    });
-  }
+    console.log(`📞 [${negocio[COL_ID]}] ${negocio[COL_NOMBRE]} | Tel: ${tel} | Correo: ${correo} | Web: ${web}`);
+  });
 
   return filtrados;
 }
@@ -105,7 +108,7 @@ function lsGPS(latitud, longitud) {
   const COL_ID = 0;     // Columna A (CLEE / ID)
   const COL_NOMBRE = 1; // Columna B (nom_estab)
   const COL_GPS = 30;   // Columna AE (Coordenadas conjuntas)
-  const RADIO_MAX = 3;  // km
+  const RADIO_MAX = 500;  // km
 
   // --- Limpieza de parámetros de entrada ---
   let latIn = latitud.toString().trim();
@@ -186,12 +189,12 @@ function hacerPruebas() {
   // ---------------------------------------------------------
   console.log("--- 2. Probando Filtro por Vialidad (lsV) ---");
   // Busca negocios en "CALLE" con nombre "JUÁREZ" 
-  lsV('CALLE', 'JUÁREZ'); 
+  lsV('CALLE', 'SAN FELIPE'); 
 
   // ---------------------------------------------------------
   console.log("--- 3. Probando Búsqueda GPS (lsGPS) ---");
   // Búsqueda con coordenadas
-  lsGPS('2198795500', '-10229574701'); 
+  lsGPS('3186540587','-11663089337'); 
 
   console.log("✅ === PRUEBAS FINALIZADAS === ✅");
 }
