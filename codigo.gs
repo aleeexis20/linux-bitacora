@@ -44,7 +44,7 @@ function ls(arg) {
     return false;
   });
 
-  // --- Impresión limpia en consola ---
+  // --- Impresión en consola ---
   if (filtrados.length === 0) {
     console.log(`Resultados ls(${arg}): No se encontraron negocios con ese criterio.`);
   } else {
@@ -62,7 +62,7 @@ function ls(arg) {
 }
 
 /**
- * 2. Función lsV - Filtro por vialidad (Mejorada contra espacios fantasma)
+ * 2. Función lsV - Filtro por vialidad
  */
 function lsV(tipoVialidad, nombreVialidad) {
   const datos = getCeldas("A2:AZ100");
@@ -71,7 +71,7 @@ function lsV(tipoVialidad, nombreVialidad) {
   const COL_TIPO = 5;     // Columna F
   const COL_NOMBRE_V = 6; // Columna G
 
-  // Limpiamos los parámetros de búsqueda por si tú les pusiste espacio sin querer
+  // Limpiamos los parámetros de búsqueda 
   let tipoBusqueda = tipoVialidad.toString().trim().toLowerCase();
   let nombreBusqueda = nombreVialidad.toString().trim().toLowerCase();
 
@@ -82,7 +82,7 @@ function lsV(tipoVialidad, nombreVialidad) {
     fila[COL_NOMBRE_V].toString().trim().toLowerCase() === nombreBusqueda
   );
 
-  // Impresión bonita en consola
+  // Impresión en consola
   if (filtrados.length === 0) {
     console.log("Resultados lsV: No se encontraron negocios en esa vialidad.");
   } else {
@@ -107,11 +107,11 @@ function lsGPS(latitud, longitud) {
   const COL_GPS = 30;   // Columna AE (Coordenadas conjuntas)
   const RADIO_MAX = 3;  // km
 
-  // --- Limpieza de parámetros de entrada (Por si no tienen puntos) ---
+  // --- Limpieza de parámetros de entrada ---
   let latIn = latitud.toString().trim();
   let lonIn = longitud.toString().trim();
 
-  // Inyectar el punto decimal si no lo trae
+  // Ingresar punto decimal en caso que no de no ponerlo
   if (!latIn.includes('.')) latIn = latIn.slice(0, 2) + "." + latIn.slice(2);
   if (!lonIn.includes('.')) lonIn = lonIn.slice(0, 4) + "." + lonIn.slice(4);
 
@@ -126,7 +126,7 @@ function lsGPS(latitud, longitud) {
     let latString = partesGps[0].trim();
     let lonString = partesGps[1].trim();
     
-    // Inyección de punto decimal a los datos crudos del Excel
+    // punto decimal x2
     let lat2 = parseFloat(latString.slice(0, 2) + "." + latString.slice(2));
     let lon2 = parseFloat(lonString.slice(0, 4) + "." + lonString.slice(4));
 
@@ -165,24 +165,13 @@ function calcularDistancia(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Crea un menú personalizado al abrir el archivo.
- */
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu("🛠️ Herramientas BI")
-    .addItem("Buscar por Contacto", "ejecutarLS") // Necesitarías una función que pida el dato
-    .addToUi();
-}
-
-/**
  * ==========================================
- * ENTORNO DE PRUEBAS 
- * Seleccione "hacerPruebas" en el menú superior y presione Ejecutar.
+ * PRUEBAS 
  * ==========================================
  */
 
 function hacerPruebas() {
-  console.log("🚀 === INICIANDO FUNCIÓN DE PRUEBAS === 🚀");
+  console.log("💻 === INICIANDO FUNCIÓN DE PRUEBAS === 🎰");
 
   // ---------------------------------------------------------
   console.log("--- 1. Probando Filtro por Contacto (ls) ---");
@@ -206,99 +195,6 @@ function hacerPruebas() {
 
   console.log("✅ === PRUEBAS FINALIZADAS === ✅");
 }
-
-
-
-
-
-
-
-
-
-    let tieneT = fila[COL_TEL] !== "";
-    let tieneW = fila[COL_WEB] !== "";
-    let tieneC = fila[COL_CORREO] !== "";
-
-    if (arg === 't') return tieneT;
-    if (arg === 'w') return tieneW;
-    if (arg === 'c') return tieneC;
-    if (arg === 'a') return (tieneT && tieneW && tieneC);
-    return false;
-  });
-
-  console.log("Resultados ls(" + arg + "):", filtrados);
-  return filtrados;
-}
-
-/**
- * 2. Función lsV(tipoVialidad, nombreVialidad)
- * Filtra negocios por dirección exacta.
- */
-
-function lsV(tipoVialidad, nombreVialidad) {
-  const datos = getCeldas("A2:G50");
-  const COL_TIPO_V = 1; 
-  const COL_NOMBRE_V = 2;
-
-  let filtrados = datos.filter(fila => {
-    return fila[COL_TIPO_V].toString().toLowerCase() === tipoVialidad.toLowerCase() &&
-           fila[COL_NOMBRE_V].toString().toLowerCase() === nombreVialidad.toLowerCase();
-  });
-
-  console.log("Resultados lsV:", filtrados);
-  return filtrados;
-}
-
-/**
- * 3. Función lsGPS(latitud, longitud)
- * Encuentra los 5 más cercanos en un radio de 3km.
- */
-
-function lsGPS(latitud, longitud) {
-  const datos = getCeldas("A2:G50");
-  const COL_LAT = 6;
-  const COL_LON = 7;
-  const RADIO_MAX = 3; // km
-
-  let lat1 = parseFloat(latitud);
-  let lon1 = parseFloat(longitud);
-
-  let resultados = datos.map(fila => {
-    let d = calcularDistanciaHaversine(lat1, lon1, fila[COL_LAT], fila[COL_LON]);
-    return { info: fila, distancia: d };
-  })
-  .filter(item => item.distancia <= RADIO_MAX)
-  .sort((a, b) => a.distancia - b.distancia)
-  .slice(0, 5);
-
-  console.log("Negocios cercanos:", resultados);
-  return resultados;
-}
-
-/**
- * Función auxiliar para cálculo de distancia 
- */
-function calcularDistanciaHaversine(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radio Tierra en km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
-
-
-
-
-
-
-
-
-
-
-
 
 
 
