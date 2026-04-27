@@ -32,27 +32,30 @@ function ls(arg) {
   const COL_CORREO = 28; // Columna AC
   const COL_WEB = 29;    // Columna AD
 
+  // 1. Validamos el comando ANTES de buscar con la estructura if/else
+  if (arg === 't' || arg === 'w' || arg === 'c' || arg === 'a') {
+    // Si el comando es válido, no hacemos nada y dejamos que el código siga
+  } else {
+    // Si el comando NO existe
+    console.log(`Error: comando no reconocido '${arg}'. Usa 't', 'w', 'c' o 'a'.`);
+    return []; // Esto cancela la búsqueda sin romper la ejecución de las demás pruebas
+  }
+
+  // 2. Ejecutamos el filtro 
   let filtrados = datos.filter(fila => {
     let tieneT = fila[COL_TEL] !== "";
     let tieneW = fila[COL_WEB] !== "";
     let tieneC = fila[COL_CORREO] !== "";
 
-    // Filtro
-    if (arg === 't') {
-      return tieneT;
-    } else if (arg === 'w') {
-      return tieneW;
-    } else if (arg === 'c') {
-      return tieneC;
-    } else if (arg === 'a') {
-      return (tieneT && tieneW && tieneC);
-    } else {
-      // Error por opción invalida
-      throw new Error(`ls: argumento inválido '${arg}'. Opciones válidas: 't', 'w', 'c', 'a'.`);
-    }
+    if (arg === 't') return tieneT;
+    else if (arg === 'w') return tieneW;
+    else if (arg === 'c') return tieneC;
+    else if (arg === 'a') return (tieneT && tieneW && tieneC);
+    
+    return false;
   });
 
-  // --- Impresión en consola ---
+  // 3. Imprimimos los resultados 
   filtrados.forEach(negocio => {
     let tel = negocio[COL_TEL] ? negocio[COL_TEL] : "N/A";
     let correo = negocio[COL_CORREO] ? negocio[COL_CORREO] : "N/A";
@@ -63,7 +66,6 @@ function ls(arg) {
 
   return filtrados;
 }
-
 /**
  * 2. Función lsV - Filtro por vialidad
  */
@@ -184,7 +186,7 @@ function hacerPruebas() {
   //'w' muestra los que tiene pagina web
   //'c' muestra los que tiene correo electronico
   //'a' muestra solo los que tiene los tres componentes telefono, web y correo electronico
-  ls('a'); 
+  ls('x'); 
 
   // ---------------------------------------------------------
   console.log("--- 2. Probando Filtro por Vialidad (lsV) ---");
